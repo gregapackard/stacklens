@@ -1,60 +1,74 @@
 # StackLens
 
-StackLens is a self-hosted infrastructure discovery and dependency mapping tool designed for homelabs and self-hosted environments.
+<p align="center">
+  <strong>Infrastructure Discovery & Dependency Mapping for Homelabs</strong>
+</p>
 
-It automatically discovers services running on your infrastructure and maps how they depend on each other.
+<p align="center">
+  Understand your infrastructure automatically.
+</p>
 
-The goal is to provide visibility into complex homelab environments where multiple services interact across containers, VMs, and networks.
-
----
-
-## Features (Planned)
-
-- Automatic Docker container discovery
-- Service dependency detection
-- Infrastructure graph visualization
-- Failure impact simulation
-- AI-assisted infrastructure diagnostics
-- Proxmox environment discovery
+<p align="center">
+  <img src="https://img.shields.io/badge/status-prototype-orange" />
+  <img src="https://img.shields.io/badge/python-3.10+-blue" />
+  <img src="https://img.shields.io/badge/license-TBD-lightgrey" />
+</p>
 
 ---
 
-## Why StackLens?
+## What is StackLens?
 
-Homelabs grow quickly.
+StackLens is a **self-hosted infrastructure discovery tool** designed for homelabs and self-hosted environments.
 
-After a while it becomes difficult to answer questions like:
+It automatically detects services running in your infrastructure and maps how they depend on each other.
 
-- What breaks if this container stops?
-- Which services depend on this database?
-- What infrastructure is actually running?
+Over time homelabs grow into complex systems of containers, services, databases, and networks. StackLens aims to provide a **live map of that infrastructure** so you can understand:
 
-StackLens aims to solve that by creating a live map of your infrastructure.
+- what services are running  
+- how they interact  
+- what breaks if something fails  
 
-Think of it as **Google Maps for your homelab**.
-
----
-
-## Current Status
-
-Early prototype.
-
-Current capabilities:
-
-- FastAPI backend
-- Docker container discovery
-- API endpoint for infrastructure scanning
+Think of StackLens as **Google Maps for your homelab**.
 
 ---
 
-## Example API
+## Example Infrastructure Map (Future Vision)
 
-Docker discovery endpoint:
+```
+Proxmox
+   │
+Docker Host
+   │
+Mosquitto
+   │
+Zigbee2MQTT
+   │
+Home Assistant
+```
 
+StackLens will automatically detect and visualize relationships like this.
+
+---
+
+## Current Capabilities
+
+StackLens is currently in **early prototype stage**.
+
+Working features:
+
+- FastAPI backend  
+- Docker container discovery  
+- Infrastructure scan API  
+
+Example endpoint:
+
+```
 GET /scan/docker
+```
 
 Example response:
 
+```
 [
   {
     "name": "nginx",
@@ -62,19 +76,24 @@ Example response:
     "status": "running"
   }
 ]
+```
 
 ---
 
-## Roadmap
+## Planned Features
 
-Planned features:
+StackLens is designed to evolve into a full infrastructure intelligence platform.
 
-- Docker network discovery
-- Automatic dependency graph generation
-- Web-based infrastructure visualization
-- Failure simulation engine
-- Multi-host discovery
-- Plugin system
+Planned capabilities:
+
+- Docker network discovery  
+- Automatic service dependency detection  
+- Infrastructure graph visualization  
+- Failure impact simulation  
+- Multi-host discovery  
+- Proxmox environment discovery  
+- AI-assisted infrastructure diagnostics  
+- Plugin system for integrations  
 
 ---
 
@@ -82,26 +101,51 @@ Planned features:
 
 Clone the repository:
 
-git clone https://github.com/gregapackard/stacklens.git  
+```
+git clone https://github.com/gregapackard/stacklens.git
 cd stacklens
+```
 
 Install dependencies:
 
+```
 pip install fastapi uvicorn docker networkx
+```
 
 Run the API server:
 
+```
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+```
 
-Open:
+Open the API:
 
+```
 http://localhost:8000
+```
 
 ---
 
-## Long Term Vision
+## Project Vision
 
-StackLens aims to become a powerful infrastructure intelligence tool for self-hosted environments, helping operators understand and manage complex service relationships automatically.
+Modern homelabs resemble small data centers.
+
+StackLens aims to provide:
+
+- infrastructure visibility  
+- automated discovery  
+- service relationship mapping  
+- operational insight  
+
+The goal is to make it easy to understand **how your infrastructure actually works**.
+
+---
+
+## Contributing
+
+Contributions are welcome once the project stabilizes.
+
+Early development is currently focused on building the core infrastructure discovery engine.
 
 ---
 
