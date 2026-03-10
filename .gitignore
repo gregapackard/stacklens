@@ -1,16 +1,14 @@
-# Python
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
-*.pyd
 
-# Virtual environments
-.env
-.venv
+# local data
+*.db
+data/
+
+# testing clones
+stacklens-test/
+
+# python envs
 venv/
-
-# OS
-.DS_Store
-
-# Logs
-*.log
+.env

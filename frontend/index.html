@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>StackLens</title>
+<script src="/ui/js/vis-network.min.js"></script>
+
+<style>
+
+body{
+  font-family:Arial;
+  margin:0;
+}
+
+#container{
+  display:flex;
+  height:100vh;
+}
+
+#network{
+  flex:3;
+  border-right:1px solid lightgray;
+}
+
+#details{
+  flex:1;
+  padding:15px;
+  background:#f8f8f8;
+  overflow:auto;
+}
+
+pre{
+  background:black;
+  color:#00ff88;
+  padding:10px;
+  height:220px;
+  overflow:auto;
+}
+
+button{
+  margin-top:10px;
+  margin-right:10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="container">
+
+<div id="network"></div>
+
+<div id="details">
+
+<h3>Node Details</h3>
+
+<div id="nodeInfo">Click a node.</div>
+
+<div id="logs"></div>
+
+</div>
+
+</div>
+
+<script>
+
+/* ===============================
+   GLOBAL STATE
+================================ */
+
+let network
+let nodesDataset
+let edgesDataset
+let nodeData = {}
+
+/* ===============================
+   ICONS
+================================ */
+
+function iconForNode(node){
+
+  if(node.type === "proxmox") return "/ui/icons/proxmox.svg"
+  if(node.type === "vm") return "/ui/icons/vm.svg"
+  if(node.type === "network") return "/ui/icons/network.svg"
+
+  if(node.type === "container"){
+
+    const image = (node.image || "").toLowerCase()
+
+    if(image.includes("redis")) return "/ui/icons/redis.svg"
+    if(image.includes("postgres")) return "/ui/icons/postgres.svg"
+    if(image.includes("nginx")) return "/ui/icons/nginx.svg"
+    if(image.includes("grafana")) return "/ui/icons/grafana.svg"
+    if(image.includes("plex")) return "/ui/icons/plex.svg"
+    if(image.includes("jellyfin")) return "/ui/icons/jellyfin.svg"
+
+    return "/ui/icons/docker.svg"
+  }
+
+  return "/ui/icons/docker.svg"
+
+}
+
+/* ===============================
+   CONTAINER STATUS COLORS
+================================ */
+
+function containerColor(status){
+
+  if(!status) return "#2ecc71"
+
+  status = status.toLowerCase()
+
+  if(status.includes("up")) return "#2ecc71"
+  if(status.includes("restart")) return "#f1c40f"
+  if(status.includes("exit")) return "#e74c3c"
+
+  return "#2ecc71"
+
+}
+
+/* ===============================
+   API
+================================ */
+
+async function fetchGraph(){
+
+  const res = await fetch("/graph")
+  return await res.json()
+
+}
+
+/* ===============================
+   NODE BUILDER
+================================ */
+
+function buildNodes(graph){
+
+  return graph.nodes.map(n => {
+
+    nodeData[n.id] = n
+
+    let label = n.id
+
+    if(n.type === "container" && (n.cpu || n.mem)){
+
+      label =
+        n.id +
+        "\nCPU: " + (n.cpu || "?") +
+        "\nRAM: " + (n.mem || "?")
+
+    }
+
+    const nodeObj = {
+      id:n.id,
+      label:label,
+      shape:"image",
+      image:iconForNode(n),
+      size:30,
+      font:{multi:true}
+    }
+
+    if(n.type === "container"){
+
+      const color = containerColor(n.status)
+
+      nodeObj.borderWidth = 3
+      nodeObj.color = {
+        border:color,
+        background:"#ffffff"
+      }
+
+    }
+
+    return nodeObj
+
+  })
+
+}
+
+/* ===============================
+   EDGE BUILDER
+================================ */
+
+function buildEdges(graph){
+
+  return graph.edges.map(e => {
+
+    let label = ""
+
+    if(e.bandwidth){
+      label = e.bandwidth + " KB/s"
+    }
+
+    return {
+      id:e.from+"-"+e.to,
+      from:e.from,
+      to:e.to,
+      label:label,
+      arrows:"to",
+      dashes:true,
+      font:{align:"middle"}
+    }
+
+  })
+
+}
+
+/* ===============================
+   LOGS + ACTIONS
+================================ */
+
+function clearLogs(){
+  document.getElementById("logs").innerHTML=""
+}
+
+function showDetails(nodeId){
+
+  const node = nodeData[nodeId]
+
+  let html=""
+
+  for(const key in node){
+    html += "<b>"+key+"</b>: "+node[key]+"<br>"
+  }
+
+  if(node.type === "container"){
+
+    html += "<br>"
+    html += `<button onclick="restartContainer('${node.id}')">Restart</button>`
+    html += `<button onclick="stopContainer('${node.id}')">Stop</button>`
+    html += `<button onclick="showLogs('${node.id}')">Logs</button>`
+
+  } else {
+
+    clearLogs()
+
+  }
+
+  document.getElementById("nodeInfo").innerHTML=html
+
+}
+
+async function restartContainer(name){
+  await fetch("/docker/restart/"+name,{method:"POST"})
+}
+
+async function stopContainer(name){
+  await fetch("/docker/stop/"+name,{method:"POST"})
+}
+
+async function showLogs(container){
+
+  const res = await fetch("/docker/logs/"+container)
+  const data = await res.json()
+
+  document.getElementById("logs").innerHTML =
+    "<h3>Logs</h3><pre>"+data.logs+"</pre>"
+
+}
+
+/* ===============================
+   GRAPH UPDATE (NO SNAP RESET)
+================================ */
+
+async function updateGraph(){
+
+  const graph = await fetchGraph()
+
+  const newNodes = buildNodes(graph)
+  const newEdges = buildEdges(graph)
+
+  nodesDataset.update(newNodes)
+  edgesDataset.update(newEdges)
+
+}
+
+/* ===============================
+   GRAPH INIT
+================================ */
+
+async function initGraph(){
+
+  const graph = await fetchGraph()
+
+  nodesDataset = new vis.DataSet(buildNodes(graph))
+  edgesDataset = new vis.DataSet(buildEdges(graph))
+
+  const container = document.getElementById("network")
+
+  const data = {
+    nodes:nodesDataset,
+    edges:edgesDataset
+  }
+
+  const options = {
+
+    layout:{
+      hierarchical:{
+        enabled:true,
+        direction:"UD",
+        sortMethod:"directed",
+        levelSeparation:160,
+        nodeSpacing:120
+      }
+    },
+
+    physics:{
+      enabled:true,
+      stabilization:{
+        iterations:200
+      }
+    },
+
+    edges:{
+      arrows:"to",
+      smooth:true
+    }
+
+  }
+
+  network = new vis.Network(container,data,options)
+
+  network.on("click",function(params){
+
+    if(params.nodes.length>0){
+      showDetails(params.nodes[0])
+    }
+
+  })
+
+}
+
+initGraph()
+
+setInterval(updateGraph,5000)
+
+</script>
+
+</body>
+</html>
