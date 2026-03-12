@@ -17,6 +17,27 @@
 
 ---
 
+## What is StackLens?
+
+StackLens is a **self-hosted infrastructure discovery and visualization tool** designed for homelabs and self-hosted environments.
+
+It automatically detects services running in your infrastructure and maps how they relate to each other in a **live topology graph**.
+
+Over time homelabs grow into complex systems of:
+
+- containers  
+- virtual machines  
+- services  
+- databases  
+- automation platforms  
+- networking layers  
+
+StackLens helps you understand that complexity by providing a **visual map of your infrastructure**.
+
+Think of StackLens as **Google Maps for your homelab**.
+
+---
+
 ## Demo
 
 <p align="center">
@@ -25,44 +46,9 @@
 
 ---
 
-## What is StackLens?
-
-StackLens is a **self-hosted infrastructure discovery tool** designed for homelabs and self-hosted environments.
-
-It automatically detects services running in your infrastructure and maps how they depend on each other.
-
-Over time homelabs grow into complex systems of containers, services, databases, and networks. StackLens aims to provide a **live map of that infrastructure** so you can understand:
-
-- what services are running  
-- where they are running  
-- how they interact  
-- what breaks if something fails  
-
-Think of StackLens as **Google Maps for your homelab infrastructure**.
-
----
-
-## Example Infrastructure Map (Vision)
-
-```
-Proxmox
-   │
-Docker Host
-   │
-Mosquitto
-   │
-Zigbee2MQTT
-   │
-Home Assistant
-```
-
-StackLens will automatically detect and visualize relationships like this.
-
----
-
 ## Current Capabilities
 
-StackLens is currently in an **early prototype stage**, but several core features are already working.
+StackLens is currently in an **early prototype stage**, but several core features are already implemented.
 
 ### Infrastructure Discovery
 
@@ -82,14 +68,32 @@ StackLens is currently in an **early prototype stage**, but several core feature
 
 From the UI you can:
 
-- view container logs  
-- restart containers  
-- stop containers  
-- inspect service status  
+- view container logs
+- restart containers
+- stop containers
+- inspect service status
 
 ---
 
-## Installation (Prototype)
+## Example Infrastructure Map (Vision)
+
+```
+Proxmox
+   │
+Docker Host
+   │
+Mosquitto
+   │
+Zigbee2MQTT
+   │
+Home Assistant
+```
+
+StackLens aims to automatically discover and visualize relationships like this.
+
+---
+
+## Installation
 
 Clone the repository:
 
@@ -104,16 +108,26 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Run the API server:
+Run the server:
 
 ```bash
 uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
-Open the UI:
+---
+
+## Access the UI
+
+Once running, open:
 
 ```
-http://localhost:8000/ui
+http://localhost/ui
+```
+
+or
+
+```
+http://<server-address>/ui
 ```
 
 ---
@@ -148,21 +162,6 @@ Planned capabilities include:
 - Plugin system for integrations
 - Infrastructure snapshots
 - AI-assisted infrastructure diagnostics
-
----
-
-## Project Vision
-
-Modern homelabs increasingly resemble **small data centers**.
-
-StackLens aims to provide:
-
-- infrastructure visibility
-- automated discovery
-- service relationship mapping
-- operational insight
-
-The goal is to make it easy to understand **how your infrastructure actually works**.
 
 ---
 
