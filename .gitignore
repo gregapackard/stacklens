@@ -1,14 +1,13 @@
+# Python
 __pycache__/
 *.pyc
-*.pyo
 
-# local data
-*.db
-data/
-
-# testing clones
-stacklens-test/
-
-# python envs
+# virtualenv
 venv/
-.env
+
+# database
+stacklens.db
+
+# OS
+.DS_Store
+Thumbs.db

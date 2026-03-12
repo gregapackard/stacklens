@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>StackLens Settings</title>
+
+<style>
+body{
+  margin:0;
+  background:#111;
+  color:white;
+  font-family:Arial;
+  padding:40px;
+}
+
+h1,h2{
+  margin-top:0;
+}
+
+button{
+  padding:8px 12px;
+  margin:4px;
+  background:#333;
+  border:none;
+  color:white;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#444;
+}
+
+input,select{
+  padding:8px;
+  margin:4px;
+  background:#222;
+  border:1px solid #444;
+  color:white;
+}
+
+table{
+  border-collapse:collapse;
+  margin-top:20px;
+  width:100%;
+}
+
+th,td{
+  padding:10px 8px;
+  border-bottom:1px solid #333;
+  text-align:left;
+  vertical-align:top;
+}
+
+.card{
+  background:#1a1a1a;
+  border:1px solid #2a2a2a;
+  padding:16px;
+  margin:20px 0;
+}
+
+.small{
+  color:#aaa;
+  font-size:14px;
+}
+
+.good{
+  color:#4CAF50;
+}
+
+.bad{
+  color:#F44336;
+}
+</style>
+</head>
+
+<body>
+
+<h1>StackLens Settings</h1>
+
+<button onclick="window.location.href='/ui/'">Back to Map</button>
+
+<div class="card">
+  <h2>Add / Edit Connector</h2>
+
+  <div>
+    <select id="type">
+      <option value="proxmox">Proxmox</option>
+      <option value="docker">Docker</option>
+    </select>
+
+    <input id="name" placeholder="Name">
+    <input id="host" placeholder="Host">
+    <input id="username" placeholder="Username">
+    <input id="token_name" placeholder="Token Name">
+    <input id="token_secret" placeholder="Token Secret">
+    <input id="port" placeholder="Port">
+
+    <button onclick="saveConnector()">Save</button>
+    <button onclick="clearForm()">Clear</button>
+  </div>
+
+  <div id="editStatus" class="small">Ready</div>
+</div>
+
+<div class="card">
+  <h2>Connectors</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Host</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="connectors"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Discovery</h2>
+
+  <div class="small">
+    Manual scan of the default network range from the backend.
+  </div>
+
+  <button onclick="scanNetwork()">Scan Network</button>
+
+  <div id="scanStatus" class="small">No scan yet.</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>IP</th>
+        <th>Services</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="discovered"></tbody>
+  </table>
+</div>
+
+<script>
+let editingId = null
+
+async function loadConnectors(){
+  const r = await fetch("/connectors")
+  const data = await r.json()
+
+  const tbody = document.getElementById("connectors")
+  tbody.innerHTML = ""
+
+  data.forEach(c => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${escapeHtml(c.name || "")}</td>
+        <td>${escapeHtml(c.type || "")}</td>
+        <td>${escapeHtml(c.host || "")}</td>
+        <td>
+          <button onclick="testConnector(${c.id})">Test</button>
+          <button onclick="editConnector(${c.id})">Edit</button>
+          <button onclick="deleteConnector(${c.id})">Delete</button>
+        </td>
+      </tr>
+    `
+  })
+}
+
+async function saveConnector(){
+  const body = {
+    type: document.getElementById("type").value,
+    name: document.getElementById("name").value,
+    host: document.getElementById("host").value,
+    username: document.getElementById("username").value,
+    token_name: document.getElementById("token_name").value,
+    token_secret: document.getElementById("token_secret").value,
+    port: document.getElementById("port").value
+  }
+
+  if(editingId){
+    await fetch("/connectors/" + editingId, {
+      method: "PUT",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    })
+    document.getElementById("editStatus").textContent = "Connector updated."
+    editingId = null
+  } else {
+    await fetch("/connectors", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    })
+    document.getElementById("editStatus").textContent = "Connector added."
+  }
+
+  clearForm()
+  loadConnectors()
+}
+
+async function editConnector(id){
+  const r = await fetch("/connectors")
+  const data = await r.json()
+  const c = data.find(x => x.id === id)
+  if(!c) return
+
+  editingId = id
+
+  document.getElementById("type").value = c.type || "proxmox"
+  document.getElementById("name").value = c.name || ""
+  document.getElementById("host").value = c.host || ""
+  document.getElementById("username").value = c.username || ""
+  document.getElementById("token_name").value = c.token_name || ""
+  document.getElementById("token_secret").value = c.token_secret || ""
+  document.getElementById("port").value = c.port || ""
+
+  document.getElementById("editStatus").textContent = "Editing connector #" + id
+}
+
+async function deleteConnector(id){
+  await fetch("/connectors/" + id, { method:"DELETE" })
+  loadConnectors()
+}
+
+async function testConnector(id){
+  try{
+    const r = await fetch("/connectors/test/" + id)
+    const data = await r.json()
+
+    if(data.success){
+      alert("Connection successful")
+    } else {
+      alert("Connection failed")
+    }
+  }catch(err){
+    alert("Connection test failed")
+  }
+}
+
+function clearForm(){
+  document.getElementById("type").value = "proxmox"
+  document.getElementById("name").value = ""
+  document.getElementById("host").value = ""
+  document.getElementById("username").value = ""
+  document.getElementById("token_name").value = ""
+  document.getElementById("token_secret").value = ""
+  document.getElementById("port").value = ""
+  editingId = null
+}
+
+async function scanNetwork(){
+  const status = document.getElementById("scanStatus")
+  const tbody = document.getElementById("discovered")
+
+  status.textContent = "Scanning..."
+  tbody.innerHTML = ""
+
+  try{
+    const r = await fetch("/discover")
+    const data = await r.json()
+
+    const found = data.discovered || []
+    status.innerHTML = `Scan complete on <b>${escapeHtml(data.network || "")}</b>. Found <b>${found.length}</b> hosts.`
+
+    found.forEach(host => {
+      const services = (host.services || []).map(s => `${s.service}:${s.port}`).join(", ")
+
+      tbody.innerHTML += `
+        <tr>
+          <td>${escapeHtml(host.ip || "")}</td>
+          <td>${escapeHtml(services)}</td>
+          <td>
+            ${renderDiscoveryButtons(host)}
+          </td>
+        </tr>
+      `
+    })
+
+  }catch(err){
+    status.innerHTML = `<span class="bad">Scan failed.</span>`
+  }
+}
+
+function renderDiscoveryButtons(host){
+  const services = host.services || []
+  let html = ""
+
+  const proxmox = services.find(s => s.service === "proxmox")
+  const docker = services.find(s => s.service === "docker")
+
+  if(proxmox){
+    html += `<button onclick="prefillDiscovered('proxmox','${escapeAttr(host.ip)}','${escapeAttr(proxmox.port)}')">Add Proxmox</button>`
+  }
+
+  if(docker){
+    html += `<button onclick="prefillDiscovered('docker','${escapeAttr(host.ip)}','${escapeAttr(docker.port)}')">Add Docker</button>`
+  }
+
+  if(!html){
+    html = `<span class="small">No supported actions</span>`
+  }
+
+  return html
+}
+
+function prefillDiscovered(type, host, port){
+  document.getElementById("type").value = type
+  document.getElementById("name").value = type + "-" + host
+  document.getElementById("host").value = host
+  document.getElementById("port").value = port || ""
+
+  if(type === "docker"){
+    document.getElementById("username").value = ""
+    document.getElementById("token_name").value = ""
+    document.getElementById("token_secret").value = ""
+  }
+
+  document.getElementById("editStatus").textContent = "Prefilled from discovery. Add remaining credentials if needed, then click Save."
+  window.scrollTo({top:0, behavior:"smooth"})
+}
+
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;")
+}
+
+function escapeAttr(str){
+  return String(str).replaceAll("'","\\'")
+}
+
+loadConnectors()
+</script>
+
+</body>
+</html>

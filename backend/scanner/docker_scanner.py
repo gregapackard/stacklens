@@ -1,63 +1,28 @@
-import subprocess
-import json
+import docker
 
-
-def get_container_stats():
-
-    try:
-
-        stats = subprocess.check_output([
-            "docker",
-            "stats",
-            "--no-stream",
-            "--format",
-            "{{json .}}"
-        ]).decode().strip().split("\n")
-
-        parsed = {}
-
-        for line in stats:
-            data = json.loads(line)
-
-            parsed[data["Name"]] = {
-                "cpu": data["CPUPerc"],
-                "mem": data["MemUsage"]
-            }
-
-        return parsed
-
-    except:
-        return {}
+client = docker.from_env()
 
 
 def scan_docker():
 
-    containers = subprocess.check_output([
-        "docker",
-        "ps",
-        "--format",
-        "{{json .}}"
-    ]).decode().strip().split("\n")
-
-    stats = get_container_stats()
+    containers = client.containers.list()
 
     results = []
 
     for c in containers:
 
-        data = json.loads(c)
+        image_name = ""
 
-        name = data["Names"]
+        if c.image.tags:
+            image_name = c.image.tags[0]
 
         results.append({
-
-            "name": name,
-            "image": data["Image"],
-            "status": data["Status"],
-            "networks": data["Networks"].split(","),
-            "cpu": stats.get(name, {}).get("cpu"),
-            "mem": stats.get(name, {}).get("mem")
-
+            "name": c.name,
+            "image": image_name,
+            "status": c.status,
+            "cpu": "-",
+            "mem": "-",
+            "host": "localhost"
         })
 
     return results

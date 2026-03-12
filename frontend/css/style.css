@@ -1,15 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-
-<meta charset="UTF-8">
-<title>StackLens</title>
-
-<script src="/ui/js/vis-network.min.js"></script>
-<script src="/ui/js/graph.js"></script>
-
-<style>
-
 body{
 margin:0;
 background:#111;
@@ -80,38 +68,3 @@ padding:10px;
 overflow:auto;
 max-height:250px;
 }
-
-</style>
-
-</head>
-
-<body>
-
-<div id="topbar">
-
-<h2>StackLens</h2>
-
-<button onclick="network.fit()">Home</button>
-
-<button onclick="window.location.href='/settings'">Settings</button>
-
-</div>
-
-<div id="graph"></div>
-
-<div id="panel">
-
-<h3>Node Info</h3>
-
-<div id="info">
-Click a node
-</div>
-
-<div id="controls"></div>
-
-<div id="logs"></div>
-
-</div>
-
-</body>
-</html>
